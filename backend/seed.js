@@ -50,7 +50,7 @@ const seedDatabase = async () => {
   } catch (error) {
     console.error('❌ Seeding error:', error);
   } finally {
-    // 6. Disconnect and exit
+    // 8. Disconnect and exit
     await mongoose.disconnect();
     console.log('🔌 Disconnected from MongoDB');
     process.exit(0);
@@ -58,3 +58,4 @@ const seedDatabase = async () => {
 };
 
 seedDatabase();
+

@@ -1,17 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { ShoppingCart, Menu, X, Leaf, LogOut, User } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import { useAuth } from '../context/AuthContext';
 import { cn } from '../lib/utils';
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const { cartCount } = useCart();
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
   const location = useLocation();
   const [isPulsing, setIsPulsing] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -29,6 +32,17 @@ export default function Navbar() {
     }
   }, [cartCount]);
 
+  // Close user menu on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const navLinks = [
     { name: 'Home', path: '/' },
   ];
@@ -36,25 +50,25 @@ export default function Navbar() {
   return (
     <header
       className={cn(
-        'sticky top-0 z-50 transition-all duration-300',
-        isScrolled ? 'bg-white/80 dark-overlay shadow-md py-3' : 'bg-transparent py-5'
+        'sticky top-0 z-40 transition-all duration-300',
+        isScrolled ? 'bg-white/90 backdrop-blur-md shadow-md py-3' : 'bg-transparent py-5'
       )}
     >
       <div className="container mx-auto px-4 md:px-6 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2 group">
           <Leaf className="h-6 w-6 text-ceylon-gold transition-transform group-hover:scale-110" />
-          <span className="font-bold text-xl tracking-tight">CeylonCart</span>
+          <span className="font-bold text-xl tracking-tight text-ceylon-green">CeylonCart</span>
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-8">
+        <nav className="hidden md:flex items-center gap-6">
           {navLinks.map((link) => (
             <Link
               key={link.name}
               to={link.path}
               className={cn(
                 'font-medium text-sm transition-colors hover:text-ceylon-gold relative group',
-                location.pathname === link.path ? 'text-ceylon-gold' : ''
+                location.pathname === link.path ? 'text-ceylon-gold' : 'text-gray-700'
               )}
             >
               {link.name}
@@ -118,7 +132,7 @@ export default function Navbar() {
         </nav>
 
         {/* Mobile menu toggle */}
-        <div className="md:hidden flex items-center gap-4">
+        <div className="md:hidden flex items-center gap-3">
           <Link to="/cart" className="relative p-2">
             <ShoppingCart className="h-6 w-6 text-ceylon-gold" />
             {cartCount > 0 && (
@@ -138,15 +152,15 @@ export default function Navbar() {
 
       {/* Mobile Navigation */}
       {isMobileMenuOpen && (
-        <div className="md:hidden absolute top-full left-0 w-full bg-white shadow-lg animate-slide-down">
-          <nav className="flex flex-col px-4 py-4 gap-4">
+        <div className="md:hidden absolute top-full left-0 w-full bg-white shadow-lg animate-slide-down border-t border-gray-100">
+          <nav className="flex flex-col px-4 py-4 gap-3">
             {navLinks.map((link) => (
               <Link
                 key={link.name}
                 to={link.path}
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={cn(
-                  'font-medium p-2 rounded-md transition-colors',
+                  'font-medium p-2 rounded-md transition-colors text-sm',
                   location.pathname === link.path ? 'bg-ceylon-cream text-ceylon-gold' : 'hover:bg-ceylon-cream/50'
                 )}
               >

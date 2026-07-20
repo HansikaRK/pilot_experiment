@@ -24,6 +24,13 @@ export default function CataloguePage() {
     queryFn: () => fetchProducts(activeCategory, debouncedKeyword),
   });
 
+  const filteredProducts = useMemo(() => {
+    if (!products) return [];
+    return filterProducts(products, searchQuery, activeCategory);
+  }, [products, searchQuery, activeCategory]);
+
+  const hasActiveFilters = searchQuery.trim() !== '' || activeCategory !== 'All';
+
   return (
     <div className="animate-fade-in flex flex-col min-h-full">
       {/* Hero Section */}
@@ -100,19 +107,28 @@ export default function CataloguePage() {
               Retry
             </button>
           </div>
-        ) : products?.length === 0 ? (
+        ) : filteredProducts.length === 0 ? (
           <div className="text-center py-16">
             <h3 className="text-2xl font-semibold text-ceylon-charcoal mb-2">No products found</h3>
-            <p className="text-gray-500">We couldn't find any products in the "{activeCategory}" category.</p>
+            <p className="text-gray-500">
+              {searchQuery
+                ? `We couldn't find any products matching "${searchQuery}" in the "${activeCategory}" category.`
+                : `We couldn't find any products in the "${activeCategory}" category.`}
+            </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {products?.map((product, index) => (
-              <div key={product._id} className="animate-slide-up" style={{ animationDelay: `${(index % 4) * 0.1}s` }}>
-                <ProductCard product={product} />
-              </div>
-            ))}
-          </div>
+          <>
+            <p className="text-sm text-gray-500 mb-6">
+              Showing {filteredProducts.length} product{filteredProducts.length === 1 ? '' : 's'}
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {filteredProducts.map((product, index) => (
+                <div key={product._id} className="animate-slide-up" style={{ animationDelay: `${(index % 4) * 0.1}s` }}>
+                  <ProductCard product={product} />
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
     </div>
