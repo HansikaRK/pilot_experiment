@@ -89,3 +89,21 @@ export interface RegisterPayload {
   email: string;
   password: string;
 }
+
+export interface Order {
+  _id: string;
+  orderId: string;
+  customer: CustomerInfo;
+  items: Array<{
+    productId: string;
+    name: string;
+    price: number;
+    quantity: number;
+    _id?: string;
+  }>;
+  totalAmount: number;
+  paymentStatus: 'success' | 'failed';
+  createdAt: string;
+  updatedAt: string;
+}
+

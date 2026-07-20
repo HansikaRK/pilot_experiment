@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -8,7 +8,6 @@ import { useAuth } from '../context/AuthContext';
 import { formatCurrency, simulatePayment, cn } from '../lib/utils';
 import { checkoutSchema, paymentSchema, type CheckoutFormData, type PaymentFormData } from '../lib/schemas';
 import { createOrder } from '../lib/api';
-import { useEffect } from 'react';
 
 export default function CheckoutPage() {
   const { items, cartTotal, clearCart } = useCart();

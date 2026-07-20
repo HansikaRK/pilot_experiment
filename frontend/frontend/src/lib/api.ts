@@ -3,6 +3,7 @@ import type {
   Product,
   OrderPayload,
   OrderResponse,
+  Order,
   AuthResponse,
   LoginPayload,
   RegisterPayload,
@@ -41,6 +42,11 @@ export const fetchProduct = async (id: string): Promise<Product> => {
 export const createOrder = async (order: OrderPayload): Promise<OrderResponse> => {
   const { data } = await api.post<OrderResponse>('/orders', order);
   return data;
+};
+
+export const fetchOrders = async (): Promise<Order[]> => {
+  const { data } = await api.get<{ success: boolean; orders: Order[] }>('/orders');
+  return data.orders;
 };
 
 export const loginUser = async (payload: LoginPayload): Promise<AuthResponse> => {
