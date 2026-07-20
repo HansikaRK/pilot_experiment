@@ -1,11 +1,32 @@
 import axios from 'axios';
-import type { Product, OrderPayload, OrderResponse, Order } from './types';
+import type {
+  Product,
+  OrderPayload,
+  OrderResponse,
+  Order,
+  AuthResponse,
+  LoginPayload,
+  RegisterPayload,
+  User
+} from './types';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
   timeout: 10000,
   headers: { 'Content-Type': 'application/json' },
 });
+
+// Interceptor to add Authorization header if token exists
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('ceyloncart_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 export const fetchProducts = async (category?: string): Promise<Product[]> => {
   const params = category && category !== 'All' ? { category } : {};
@@ -26,6 +47,26 @@ export const createOrder = async (order: OrderPayload): Promise<OrderResponse> =
 export const fetchOrders = async (): Promise<Order[]> => {
   const { data } = await api.get<{ success: boolean; orders: Order[] }>('/orders');
   return data.orders;
+};
+
+export const loginUser = async (payload: LoginPayload): Promise<AuthResponse> => {
+  const { data } = await api.post<AuthResponse>('/auth/login', payload);
+  return data;
+};
+
+export const registerUser = async (payload: RegisterPayload): Promise<AuthResponse> => {
+  const { data } = await api.post<AuthResponse>('/auth/register', payload);
+  return data;
+};
+
+export const getCurrentUser = async (): Promise<{ success: boolean; user: User }> => {
+  const { data } = await api.get<{ success: boolean; user: User }>('/auth/me');
+  return data;
+};
+
+export const logoutUser = async (): Promise<{ success: boolean }> => {
+  const { data } = await api.post<{ success: boolean }>('/auth/logout');
+  return data;
 };
 
 export default api;

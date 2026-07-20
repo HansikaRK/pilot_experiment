@@ -7,23 +7,28 @@ import CartPage from './pages/CartPage'
 import CheckoutPage from './pages/CheckoutPage'
 import OrderConfirmationPage from './pages/OrderConfirmationPage'
 import AdminPage from './pages/AdminPage'
+import { AuthProvider } from './context/AuthContext'
+import AuthModal from './components/AuthModal'
 
 function App() {
   return (
-    <div className="min-h-screen flex flex-col bg-ceylon-cream">
-      <Navbar />
-      <main className="flex-1">
-        <Routes>
-          <Route path="/" element={<CataloguePage />} />
-          <Route path="/product/:id" element={<ProductPage />} />
-          <Route path="/cart" element={<CartPage />} />
-          <Route path="/checkout" element={<CheckoutPage />} />
-          <Route path="/order-confirmation" element={<OrderConfirmationPage />} />
-          <Route path="/admin" element={<AdminPage />} />
-        </Routes>
-      </main>
-      <Footer />
-    </div>
+    <AuthProvider>
+      <div className="min-h-screen flex flex-col bg-ceylon-cream">
+        <Navbar />
+        <main className="flex-1">
+          <Routes>
+            <Route path="/" element={<CataloguePage />} />
+            <Route path="/product/:id" element={<ProductPage />} />
+            <Route path="/cart" element={<CartPage />} />
+            <Route path="/checkout" element={<CheckoutPage />} />
+            <Route path="/order-confirmation" element={<OrderConfirmationPage />} />
+            <Route path="/admin" element={<AdminPage />} />
+          </Routes>
+        </main>
+        <Footer />
+        <AuthModal />
+      </div>
+    </AuthProvider>
   )
 }
 

@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const Product = require('./models/Product');
 const Order = require('./models/Order');
+const User = require('./models/User');
 
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/ceyloncart';
 
@@ -24,6 +25,30 @@ const seedDatabase = async () => {
     // 4. Insert all products
     const insertedProducts = await Product.insertMany(productsData);
     console.log(`🌱 Successfully inserted ${insertedProducts.length} products`);
+
+    // Seed dummy users
+    await User.deleteMany();
+    console.log('🗑️  Cleared existing users from database');
+
+    const dummyUsers = [
+      {
+        name: 'Kasun Perera',
+        email: 'user@ceyloncart.com',
+        password: 'password123',
+        role: 'user'
+      },
+      {
+        name: 'Amara Fernando',
+        email: 'admin@ceyloncart.com',
+        password: 'password123',
+        role: 'admin'
+      }
+    ];
+
+    for (const u of dummyUsers) {
+      await User.create(u);
+    }
+    console.log(`👤 Successfully seeded ${dummyUsers.length} dummy user accounts (user@ceyloncart.com / admin@ceyloncart.com, pwd: password123)`);
 
     // 5. Read orders from JSON file
     const ordersPath = path.join(__dirname, 'data', 'orders.json');
