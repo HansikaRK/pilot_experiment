@@ -1,0 +1,92 @@
+[
+  {
+    "name": "Premium Ceylon Black Tea",
+    "description": "Experience the rich, bold flavor of authentic Ceylon black tea, handpicked from the lush estates of Nuwara Eliya. Perfect for a refreshing morning brew.",
+    "price": 12.99,
+    "category": "Tea",
+    "image": "https://images.unsplash.com/photo-1597481499750-3e6b22637e12?w=600&h=400&fit=crop",
+    "stock": 100,
+    "rating": 5
+  },
+  {
+    "name": "Ceylon Cinnamon Sticks",
+    "description": "True Ceylon cinnamon (Cinnamomum verum) sticks, known for their delicate, sweet flavor and low coumarin content. Ideal for baking and savory dishes.",
+    "price": 8.50,
+    "category": "Spices",
+    "image": "https://images.unsplash.com/photo-1557022209-eb5b790d5658?w=600&h=400&fit=crop",
+    "stock": 150,
+    "rating": 4.8
+  },
+  {
+    "name": "Organic Ceylon White Tea",
+    "description": "A rare and exquisite white tea made from unopened buds, sun-dried to perfection. Offers a subtle, delicate flavor with floral notes.",
+    "price": 24.99,
+    "category": "Tea",
+    "image": "https://images.unsplash.com/photo-1594631252845-29fc4cc8c2a1?w=600&h=400&fit=crop",
+    "stock": 30,
+    "rating": 4.9
+  },
+  {
+    "name": "Sri Lankan Black Pepper",
+    "description": "High-quality, aromatic black pepper grown in the tropical climate of Sri Lanka. Adds a robust and spicy kick to any culinary creation.",
+    "price": 6.99,
+    "category": "Spices",
+    "image": "https://images.unsplash.com/photo-1596565545934-2e23631ea67b?w=600&h=400&fit=crop",
+    "stock": 200,
+    "rating": 4.7
+  },
+  {
+    "name": "Traditional Wooden Mask",
+    "description": "A hand-carved, vibrant wooden mask crafted by traditional artisans in Ambalangoda. Represents Sri Lankan folklore and cultural heritage.",
+    "price": 45.00,
+    "category": "Handicrafts",
+    "image": "https://images.unsplash.com/photo-1620216654763-7eb58509e51e?w=600&h=400&fit=crop",
+    "stock": 15,
+    "rating": 4.6
+  },
+  {
+    "name": "Handloom Silk Saree",
+    "description": "An elegant, intricately woven handloom silk saree, blending traditional techniques with contemporary designs. A timeless addition to any wardrobe.",
+    "price": 89.99,
+    "category": "Textiles",
+    "image": "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=600&h=400&fit=crop",
+    "stock": 10,
+    "rating": 4.9
+  },
+  {
+    "name": "Ceylon Moonstone Pendant",
+    "description": "A beautifully crafted pendant featuring a genuine Ceylon moonstone, known for its captivating blue sheen. Set in high-quality sterling silver.",
+    "price": 65.00,
+    "category": "Gems",
+    "image": "https://images.unsplash.com/photo-1601121141461-9d6647bca1ed?w=600&h=400&fit=crop",
+    "stock": 25,
+    "rating": 4.8
+  },
+  {
+    "name": "Roasted Cashew Nuts",
+    "description": "Premium quality cashew nuts, perfectly roasted to bring out their buttery, rich flavor. A healthy and delicious snack.",
+    "price": 15.99,
+    "category": "Food",
+    "image": "https://images.unsplash.com/photo-1599598425947-330026e6378e?w=600&h=400&fit=crop",
+    "stock": 80,
+    "rating": 4.7
+  },
+  {
+    "name": "Virgin Coconut Oil",
+    "description": "100% pure, cold-pressed virgin coconut oil extracted from fresh Ceylon coconuts. Versatile for cooking, skin care, and hair care.",
+    "price": 11.50,
+    "category": "Food",
+    "image": "https://images.unsplash.com/photo-1620573960249-1be7f914b4de?w=600&h=400&fit=crop",
+    "stock": 120,
+    "rating": 4.8
+  },
+  {
+    "name": "Ceylon Curry Powder Blend",
+    "description": "An authentic, aromatic blend of roasted spices tailored for traditional Sri Lankan curries. Elevates the flavor profile of meat and vegetable dishes.",
+    "price": 7.99,
+    "category": "Spices",
+    "image": "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=600&h=400&fit=crop",
+    "stock": 250,
+    "rating": 4.6
+  }
+]
