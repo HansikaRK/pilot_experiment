@@ -5,7 +5,7 @@ const { param, validationResult } = require('express-validator');
 const sanitizeHtml = require('sanitize-html');
 
 // @route   GET /api/products
-// @desc    Fetch all products, optionally filter by category
+// @desc    Fetch all products, optionally filter by category and/or keyword search
 router.get('/', async (req, res, next) => {
   try {
     const query = {};
@@ -17,6 +17,20 @@ router.get('/', async (req, res, next) => {
         allowedTags: [],
         allowedAttributes: {}
       });
+    }
+
+    // Optional keyword search (regex on product name)
+    if (req.query.keyword) {
+      // Sanitize input to strip HTML tags
+      let keyword = sanitizeHtml(req.query.keyword, {
+        allowedTags: [],
+        allowedAttributes: {}
+      });
+
+      // Escape special regex characters to prevent ReDoS
+      keyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+      query.name = { $regex: keyword, $options: 'i' };
     }
 
     const products = await Product.find(query);

@@ -1,18 +1,27 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchProducts } from '../lib/api';
 import ProductCard from '../components/ProductCard';
 import { cn } from '../lib/utils';
-import { RefreshCcw } from 'lucide-react';
+import { RefreshCcw, Search } from 'lucide-react';
 
 const CATEGORIES = ['All', 'Tea', 'Spices', 'Handicrafts', 'Textiles', 'Food', 'Gems'];
 
 export default function CataloguePage() {
   const [activeCategory, setActiveCategory] = useState('All');
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [debouncedKeyword, setDebouncedKeyword] = useState('');
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedKeyword(searchKeyword);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchKeyword]);
 
   const { data: products, isLoading, isError, refetch } = useQuery({
-    queryKey: ['products', activeCategory],
-    queryFn: () => fetchProducts(activeCategory),
+    queryKey: ['products', activeCategory, debouncedKeyword],
+    queryFn: () => fetchProducts(activeCategory, debouncedKeyword),
   });
 
   return (
@@ -31,22 +40,38 @@ export default function CataloguePage() {
       </section>
 
       <div className="container mx-auto px-4 md:px-6 py-12">
-        {/* Category Filter */}
-        <div className="flex overflow-x-auto pb-4 mb-8 gap-3 hide-scrollbar items-center justify-start md:justify-center animate-slide-up" style={{ animationDelay: '0.1s' }}>
-          {CATEGORIES.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
-              className={cn(
-                'px-5 py-2 rounded-full font-medium text-sm transition-all whitespace-nowrap',
-                activeCategory === cat
-                  ? 'bg-ceylon-gold text-white shadow-md'
-                  : 'bg-white text-ceylon-charcoal hover:bg-ceylon-gold/20'
-              )}
-            >
-              {cat}
-            </button>
-          ))}
+        {/* Search and Category Filter Row */}
+        <div className="flex flex-col md:flex-row gap-6 justify-between items-center mb-8 animate-slide-up" style={{ animationDelay: '0.1s' }}>
+          
+          {/* Category Filter */}
+          <div className="flex overflow-x-auto pb-2 gap-3 hide-scrollbar items-center w-full md:w-auto">
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                className={cn(
+                  'px-5 py-2 rounded-full font-medium text-sm transition-all whitespace-nowrap',
+                  activeCategory === cat
+                    ? 'bg-ceylon-gold text-white shadow-md'
+                    : 'bg-white text-ceylon-charcoal hover:bg-ceylon-gold/20'
+                )}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+
+          {/* Search Bar */}
+          <div className="relative w-full md:w-72 flex-shrink-0">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search products..."
+              value={searchKeyword}
+              onChange={(e) => setSearchKeyword(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-full outline-none focus:border-ceylon-gold focus:ring-1 focus:ring-ceylon-gold transition-all text-sm shadow-sm"
+            />
+          </div>
         </div>
 
         {/* Content */}

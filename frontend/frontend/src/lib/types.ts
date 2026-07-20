@@ -64,3 +64,32 @@ export interface PaymentResult {
 }
 
 export type ProductCategory = Product['category'];
+
+export interface User {
+  _id: string;
+  name: string;
+  email: string;
+  role: 'customer' | 'admin';
+}
+
+export interface AuthResponse {
+  success: boolean;
+  token: string;
+  user: User;
+}
+
+export interface AdminOrder {
+  _id: string;
+  orderId: string;
+  customer: CustomerInfo;
+  items: Array<{
+    productId: string;
+    name: string;
+    price: number;
+    quantity: number;
+  }>;
+  totalAmount: number;
+  paymentStatus: 'success' | 'failed';
+  createdAt: string;
+  updatedAt: string;
+}

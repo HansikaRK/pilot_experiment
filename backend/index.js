@@ -10,6 +10,7 @@ const cookieParser = require('cookie-parser');
 
 const productRoutes = require('./routes/productRoutes');
 const orderRoutes = require('./routes/orderRoutes');
+const authRoutes = require('./routes/authRoutes');
 
 const app = express();
 
@@ -51,6 +52,7 @@ app.use('/api', limiter);
 
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/auth', authRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ShoppingCart, Menu, X, Leaf } from 'lucide-react';
+import { ShoppingCart, Menu, X, Leaf, LogOut, User } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import { cn } from '../lib/utils';
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { cartCount } = useCart();
+  const { user, isAuthenticated, isAdmin, logout } = useAuth();
   const location = useLocation();
   const [isPulsing, setIsPulsing] = useState(false);
 
@@ -64,6 +66,17 @@ export default function Navbar() {
               />
             </Link>
           ))}
+          {isAdmin && (
+            <Link
+              to="/admin"
+              className={cn(
+                'font-medium text-sm transition-colors hover:text-ceylon-maroon relative group flex items-center gap-1',
+                location.pathname === '/admin' ? 'text-ceylon-maroon' : ''
+              )}
+            >
+              Admin
+            </Link>
+          )}
           <Link to="/cart" className="relative group p-2">
             <ShoppingCart className="h-6 w-6 transition-transform group-hover:scale-110 group-hover:text-ceylon-gold" />
             {cartCount > 0 && (
@@ -77,6 +90,31 @@ export default function Navbar() {
               </span>
             )}
           </Link>
+
+          <div className="h-6 w-px bg-gray-300 mx-2" />
+
+          {isAuthenticated ? (
+            <div className="flex items-center gap-4">
+              <span className="text-sm font-medium flex items-center gap-2">
+                <User className="w-4 h-4" />
+                {user?.name.split(' ')[0]}
+              </span>
+              <button
+                onClick={logout}
+                className="text-sm font-medium text-gray-500 hover:text-ceylon-maroon transition-colors flex items-center gap-1"
+              >
+                <LogOut className="w-4 h-4" />
+                Logout
+              </button>
+            </div>
+          ) : (
+            <Link
+              to="/login"
+              className="text-sm font-medium bg-ceylon-charcoal text-white px-4 py-2 rounded-md hover:bg-ceylon-slate transition-colors"
+            >
+              Login
+            </Link>
+          )}
         </nav>
 
         {/* Mobile menu toggle */}
@@ -115,6 +153,42 @@ export default function Navbar() {
                 {link.name}
               </Link>
             ))}
+            {isAdmin && (
+              <Link
+                to="/admin"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="font-medium p-2 rounded-md hover:bg-ceylon-cream/50 transition-colors text-ceylon-maroon"
+              >
+                Admin Dashboard
+              </Link>
+            )}
+            <div className="h-px bg-gray-200 my-2" />
+            {isAuthenticated ? (
+              <>
+                <div className="p-2 text-sm font-medium text-gray-600 flex items-center gap-2">
+                  <User className="w-4 h-4" />
+                  Hi, {user?.name}
+                </div>
+                <button
+                  onClick={() => {
+                    logout();
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="font-medium p-2 rounded-md hover:bg-red-50 text-red-600 transition-colors flex items-center gap-2 text-left"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Logout
+                </button>
+              </>
+            ) : (
+              <Link
+                to="/login"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="font-medium p-2 rounded-md bg-ceylon-charcoal text-white text-center transition-colors"
+              >
+                Login
+              </Link>
+            )}
           </nav>
         </div>
       )}

@@ -3,6 +3,18 @@ const router = express.Router();
 const crypto = require('crypto');
 const { body, validationResult } = require('express-validator');
 const Order = require('../models/Order');
+const { protect, adminOnly } = require('../middleware/authMiddleware');
+
+// @route   GET /api/orders
+// @desc    Get all orders (admin only)
+router.get('/', protect, adminOnly, async (req, res, next) => {
+  try {
+    const orders = await Order.find().sort({ createdAt: -1 });
+    res.json({ success: true, orders });
+  } catch (error) {
+    next(error);
+  }
+});
 
 // Validation chain for creating an order
 const validateOrder = [
