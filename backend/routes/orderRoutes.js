@@ -72,4 +72,18 @@ router.post('/', validateOrder, async (req, res, next) => {
   }
 });
 
+// @route   GET /api/orders
+// @desc    Get all orders
+router.get('/', async (req, res, next) => {
+  try {
+    const orders = await Order.find().sort({ createdAt: -1 });
+    res.status(200).json({
+      success: true,
+      orders
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;

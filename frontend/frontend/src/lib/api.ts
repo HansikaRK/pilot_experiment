@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Product, OrderPayload, OrderResponse } from './types';
+import type { Product, OrderPayload, OrderResponse, Order } from './types';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
@@ -21,6 +21,11 @@ export const fetchProduct = async (id: string): Promise<Product> => {
 export const createOrder = async (order: OrderPayload): Promise<OrderResponse> => {
   const { data } = await api.post<OrderResponse>('/orders', order);
   return data;
+};
+
+export const fetchOrders = async (): Promise<Order[]> => {
+  const { data } = await api.get<{ success: boolean; orders: Order[] }>('/orders');
+  return data.orders;
 };
 
 export default api;
