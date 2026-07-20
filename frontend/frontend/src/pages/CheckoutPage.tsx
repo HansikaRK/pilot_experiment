@@ -1,17 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Lock, Loader2, CreditCard, User, MapPin } from 'lucide-react';
 import { useCart } from '../context/CartContext';
-import { useAuth } from '../context/AuthContext';
 import { formatCurrency, simulatePayment, cn } from '../lib/utils';
 import { checkoutSchema, paymentSchema, type CheckoutFormData, type PaymentFormData } from '../lib/schemas';
 import { createOrder } from '../lib/api';
 
 export default function CheckoutPage() {
   const { items, cartTotal, clearCart } = useCart();
-  const { user } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState<1 | 2>(1);
   const [customerData, setCustomerData] = useState<CheckoutFormData | null>(null);
@@ -22,13 +20,6 @@ export default function CheckoutPage() {
     resolver: zodResolver(checkoutSchema),
     mode: 'onTouched',
   });
-
-  useEffect(() => {
-    if (user) {
-      if (!customerForm.getValues('name')) customerForm.setValue('name', user.name);
-      if (!customerForm.getValues('email')) customerForm.setValue('email', user.email);
-    }
-  }, [user, customerForm]);
 
   const paymentForm = useForm<PaymentFormData>({
     resolver: zodResolver(paymentSchema),
