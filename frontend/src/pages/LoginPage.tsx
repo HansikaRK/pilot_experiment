@@ -35,7 +35,7 @@ export default function LoginPage() {
   };
 
   const InputField = ({ label, name, type = 'text', placeholder = '', icon: Icon }: any) => {
-    const fieldError = form.formState.errors[name];
+    const fieldError = form.formState.errors[name as keyof typeof form.formState.errors];
     return (
       <div className="flex flex-col gap-1.5 mb-4">
         <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">

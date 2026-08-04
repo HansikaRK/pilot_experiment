@@ -1,8 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { Package, Calendar, User, Search, RefreshCcw } from 'lucide-react';
+import { Package, Calendar, Search, RefreshCcw } from 'lucide-react';
 import { fetchAllOrders } from '../lib/api';
 import { formatCurrency, cn } from '../lib/utils';
-import type { AdminOrder } from '../lib/types';
 import { useState } from 'react';
 
 export default function AdminOrdersPage() {
