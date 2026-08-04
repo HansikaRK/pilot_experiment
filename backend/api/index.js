@@ -8,9 +8,9 @@ const mongoSanitize = require('express-mongo-sanitize');
 const hpp = require('hpp');
 const cookieParser = require('cookie-parser');
 
-const productRoutes = require('./routes/productRoutes');
-const orderRoutes = require('./routes/orderRoutes');
-const authRoutes = require('./routes/authRoutes');
+const productRoutes = require('../routes/productRoutes');
+const orderRoutes = require('../routes/orderRoutes');
+const authRoutes = require('../routes/authRoutes');
 
 const app = express();
 
