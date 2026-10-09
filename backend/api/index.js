@@ -53,6 +53,7 @@ app.use('/api', limiter);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/inventory', require('../routes/inventoryRoutes'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

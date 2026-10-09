@@ -1,20 +1,23 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Lock, Loader2, CreditCard, User, MapPin } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import { formatCurrency, simulatePayment, cn } from '../lib/utils';
 import { checkoutSchema, paymentSchema, type CheckoutFormData, type PaymentFormData } from '../lib/schemas';
-import { createOrder } from '../lib/api';
+import { createOrder, previewOrder } from '../lib/api';
 
 export default function CheckoutPage() {
   const { items, cartTotal, clearCart } = useCart();
+  const { isAdmin } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState<1 | 2>(1);
   const [customerData, setCustomerData] = useState<CheckoutFormData | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [couponCode, setCouponCode] = useState('');
 
   const customerForm = useForm<CheckoutFormData>({
     resolver: zodResolver(checkoutSchema),
@@ -26,6 +29,10 @@ export default function CheckoutPage() {
     mode: 'onTouched',
   });
 
+  if (isAdmin) {
+    return <Navigate to="/admin" replace />;
+  }
+
   if (items.length === 0 && !isProcessing) {
     return <Navigate to="/cart" replace />;
   }
@@ -35,6 +42,35 @@ export default function CheckoutPage() {
     setStep(2);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  const [preview, setPreview] = useState<any>(null);
+  
+  useEffect(() => {
+    if (step === 2 && customerData) {
+      const loadPreview = async () => {
+        try {
+          const res = await previewOrder({
+            customer: {
+              name: customerData.name,
+              email: customerData.email,
+              phone: customerData.phone,
+              address: {
+                street: customerData.street,
+                city: customerData.city,
+                postalCode: customerData.postalCode,
+              }
+            },
+            items: items.map(i => ({ productId: i.productId, quantity: i.quantity })),
+            couponCode: couponCode || undefined
+          });
+          if (res.success) setPreview(res.pricing);
+        } catch (e) {
+          console.error('Failed to load preview', e);
+        }
+      };
+      loadPreview();
+    }
+  }, [step, customerData, items, couponCode]);
 
   const onPaymentSubmit = async (data: PaymentFormData) => {
     if (!customerData) return;
@@ -52,6 +88,7 @@ export default function CheckoutPage() {
       }
 
       const orderPayload = {
+        cartId: 'cart-' + Math.random().toString(36).substring(7),
         customer: {
           name: customerData.name,
           email: customerData.email,
@@ -64,11 +101,9 @@ export default function CheckoutPage() {
         },
         items: items.map(i => ({
           productId: i.productId,
-          name: i.name,
-          price: i.price,
           quantity: i.quantity
         })),
-        paymentStatus: 'success' as const
+        couponCode: couponCode || undefined
       };
 
       const res = await createOrder(orderPayload);
@@ -233,20 +268,42 @@ export default function CheckoutPage() {
               ))}
             </div>
             
-            <div className="border-t border-gray-100 pt-4 flex flex-col gap-2 mb-4 text-sm">
-              <div className="flex justify-between text-gray-600">
-                <span>Subtotal</span>
-                <span>{formatCurrency(cartTotal)}</span>
+            <div className="border-t border-gray-100 pt-4 mt-4 flex flex-col gap-2 mb-4 text-sm">
+              <div className="flex gap-2">
+                <input 
+                  type="text" 
+                  placeholder="Coupon Code" 
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-ceylon-gold"
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value)}
+                  disabled={step === 1}
+                />
               </div>
+              <div className="flex justify-between text-gray-600 mt-2">
+                <span>Subtotal</span>
+                <span>{preview ? formatCurrency(preview.subtotalMinor / 100) : formatCurrency(cartTotal)}</span>
+              </div>
+              {preview && preview.discountTotalMinor > 0 && (
+                <div className="flex justify-between text-green-600">
+                  <span>Discount</span>
+                  <span>-{formatCurrency(preview.discountTotalMinor / 100)}</span>
+                </div>
+              )}
               <div className="flex justify-between text-gray-600">
                 <span>Shipping</span>
-                <span>Free</span>
+                <span>{preview ? (preview.shippingCostMinor > 0 ? formatCurrency(preview.shippingCostMinor / 100) : 'Free') : 'Calculated at payment details'}</span>
               </div>
+              {preview && preview.taxAmountMinor > 0 && (
+                <div className="flex justify-between text-gray-600">
+                  <span>Tax</span>
+                  <span>{formatCurrency(preview.taxAmountMinor / 100)}</span>
+                </div>
+              )}
             </div>
             
             <div className="border-t border-gray-100 pt-4 flex justify-between items-center">
               <span className="font-bold text-lg text-ceylon-charcoal">Total</span>
-              <span className="font-bold text-xl text-ceylon-maroon">{formatCurrency(cartTotal)}</span>
+              <span className="font-bold text-xl text-ceylon-maroon">{preview ? formatCurrency(preview.totalMinor / 100) : formatCurrency(cartTotal)}</span>
             </div>
           </div>
         </div>

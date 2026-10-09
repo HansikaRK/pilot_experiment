@@ -109,13 +109,13 @@ export default function CartPage() {
               </div>
               <div className="flex justify-between text-gray-600">
                 <span>Shipping</span>
-                <span className="text-green-600 font-medium">Free</span>
+                <span className="text-gray-500 text-sm">Calculated at checkout</span>
               </div>
             </div>
             
             <div className="border-t border-gray-100 pt-4 mb-8">
               <div className="flex justify-between items-center">
-                <span className="font-bold text-lg text-ceylon-charcoal">Total</span>
+                <span className="font-bold text-lg text-ceylon-charcoal">Estimated Total</span>
                 <span className="font-bold text-2xl text-ceylon-maroon">{formatCurrency(cartTotal)}</span>
               </div>
             </div>

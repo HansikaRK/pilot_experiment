@@ -7,6 +7,11 @@ const orderSchema = new mongoose.Schema(
       required: true,
       unique: true
     },
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: false
+    },
     customer: {
       name: {
         type: String,
@@ -50,7 +55,7 @@ const orderSchema = new mongoose.Schema(
           type: String,
           required: true
         },
-        price: {
+        unitPriceMinor: {
           type: Number,
           required: true
         },
@@ -58,20 +63,31 @@ const orderSchema = new mongoose.Schema(
           type: Number,
           required: true,
           min: [1, 'Quantity must be at least 1']
+        },
+        amountMinor: {
+          type: Number,
+          required: true
         }
       }
     ],
-    totalAmount: {
+    subtotalMinor: { type: Number, required: true },
+    discountTotalMinor: { type: Number, default: 0 },
+    shippingCostMinor: { type: Number, default: 0 },
+    taxAmountMinor: { type: Number, default: 0 },
+    totalAmountMinor: {
       type: Number,
       required: true,
       min: [0, 'Total amount must be a positive number']
     },
-    paymentStatus: {
+    currency: { type: String, default: 'LKR' },
+    currencyRate: { type: Number, default: 1 }, // Snapshotted exchange rate
+    status: {
       type: String,
-      required: true,
-      enum: ['success', 'failed'],
-      default: 'success'
-    }
+      enum: ['pending', 'paid', 'packed', 'shipped', 'delivered', 'cancelled', 'refunded'],
+      default: 'pending'
+    },
+    couponApplied: { type: mongoose.Schema.Types.ObjectId, ref: 'Coupon', default: null },
+    cartId: { type: String, required: true } // Link back to the cart/reservation
   },
   {
     timestamps: true

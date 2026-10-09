@@ -4,6 +4,8 @@ const crypto = require('crypto');
 const { body, validationResult } = require('express-validator');
 const Order = require('../models/Order');
 const { protect, adminOnly } = require('../middleware/authMiddleware');
+const checkoutService = require('../services/checkoutService');
+const paymentService = require('../services/paymentService');
 
 // @route   GET /api/orders
 // @desc    Get all orders (admin only)
@@ -16,8 +18,25 @@ router.get('/', protect, adminOnly, async (req, res, next) => {
   }
 });
 
+// @route   GET /api/orders/myorders
+// @desc    Get customer orders
+router.get('/myorders', protect, async (req, res, next) => {
+  try {
+    const orders = await Order.find({ 
+      $or: [
+        { 'customer.email': req.user.email },
+        { user: req.user._id }
+      ]
+    }).sort({ createdAt: -1 });
+    res.json({ success: true, orders });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Validation chain for creating an order
 const validateOrder = [
+  body('cartId').notEmpty().withMessage('cartId is required'),
   body('customer.name').notEmpty().withMessage('Name is required').trim().escape().isLength({ max: 100 }),
   body('customer.email').isEmail().withMessage('Valid email is required').normalizeEmail(),
   body('customer.phone').notEmpty().withMessage('Phone is required').trim().matches(/^[0-9+\-\s()]+$/).withMessage('Invalid phone format').isLength({ max: 20 }),
@@ -27,16 +46,12 @@ const validateOrder = [
   
   body('items').isArray({ min: 1 }).withMessage('At least one item is required'),
   body('items.*.productId').notEmpty().isMongoId().withMessage('Valid product ID required for items'),
-  body('items.*.name').notEmpty().trim().escape(),
-  body('items.*.price').isFloat({ min: 0 }).withMessage('Price must be a positive number'),
-  body('items.*.quantity').isInt({ min: 1 }).withMessage('Quantity must be at least 1'),
-  
-  body('paymentStatus').equals('success').withMessage('Payment must be successful')
+  body('items.*.quantity').isInt({ min: 1 }).withMessage('Quantity must be at least 1')
 ];
 
-// @route   POST /api/orders
-// @desc    Create new order
-router.post('/', validateOrder, async (req, res, next) => {
+// @route   POST /api/orders/checkout
+// @desc    Integrated Checkout Flow
+router.post('/checkout', protect, validateOrder, async (req, res, next) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -46,39 +61,82 @@ router.post('/', validateOrder, async (req, res, next) => {
       });
     }
 
-    const { customer, items, paymentStatus } = req.body;
+    const { cartId, customer, items, couponCode, hasHighValueGoods, totalWeightKg } = req.body;
 
-    // 1. Generate orderId: 'CC-' + 8 random hex uppercase chars
-    const orderId = 'CC-' + crypto.randomBytes(4).toString('hex').toUpperCase();
+    const result = await checkoutService.processCheckout(cartId, customer, items, couponCode, hasHighValueGoods, totalWeightKg, 0, req.user._id);
 
-    // 2. Calculate totalAmount server-side
-    const totalAmount = items.reduce((total, item) => {
-      return total + (item.price * item.quantity);
-    }, 0);
-
-    // 3. Save order to DB
-    const newOrder = new Order({
-      orderId,
-      customer,
-      items,
-      totalAmount,
-      paymentStatus
-    });
-
-    const savedOrder = await newOrder.save();
-
-    // 4. Return 201 response
     res.status(201).json({
       success: true,
-      order: {
-        orderId: savedOrder.orderId,
-        totalAmount: savedOrder.totalAmount,
-        items: savedOrder.items,
-        customer: savedOrder.customer,
-        createdAt: savedOrder.createdAt
-      }
+      order: result.order,
+      paymentIntent: result.paymentIntent,
+      reservationExpiresAt: result.reservationExpiresAt
     });
+  } catch (error) {
+    next(error);
+  }
+});
 
+// @route   POST /api/orders/preview
+// @desc    Preview pricing without creating order or reservations
+router.post('/preview', async (req, res, next) => {
+  try {
+    const { items, customer, couponCode, hasHighValueGoods, totalWeightKg } = req.body;
+    if (!items || items.length === 0) return res.status(400).json({ success: false, message: 'No items' });
+    
+    // Preliminary pricing
+    const pricingService = require('../services/pricingService');
+    const shippingService = require('../services/shippingService');
+    const Product = require('../models/Product');
+    
+    const cartItemsForPricing = [];
+    for (const item of items) {
+      const product = await Product.findById(item.productId);
+      if (product) {
+        cartItemsForPricing.push({
+          productId: product._id,
+          quantity: item.quantity,
+          name: product.name,
+          price: product.price
+        });
+      }
+    }
+
+    const preliminaryPricing = await pricingService.calculatePricing(cartItemsForPricing, couponCode, 0, 0);
+    
+    let shippingCostMinor = 0;
+    if (customer && customer.address && customer.address.city) {
+      shippingCostMinor = await shippingService.calculateShipping(
+        cartItemsForPricing, 
+        preliminaryPricing.subtotalMinor - preliminaryPricing.discountTotalMinor,
+        customer.address.city,
+        'Sri Lanka', 
+        hasHighValueGoods,
+        totalWeightKg
+      );
+    }
+
+    const finalPricing = await pricingService.calculatePricing(
+      cartItemsForPricing,
+      couponCode,
+      shippingCostMinor,
+      0
+    );
+
+    res.json({
+      success: true,
+      pricing: finalPricing
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// @route   POST /api/orders/webhook
+// @desc    Simulated payment webhook
+router.post('/webhook', async (req, res, next) => {
+  try {
+    const result = await paymentService.handleWebhook(req.body);
+    res.json({ success: true, result });
   } catch (error) {
     next(error);
   }

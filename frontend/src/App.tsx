@@ -9,6 +9,10 @@ import OrderConfirmationPage from './pages/OrderConfirmationPage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import AdminOrdersPage from './pages/AdminOrdersPage'
+import AdminInventoryPage from './pages/AdminInventoryPage'
+import AdminUsersPage from './pages/AdminUsersPage'
+import AdminProductsPage from './pages/AdminProductsPage'
+import MyOrdersPage from './pages/MyOrdersPage'
 import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
@@ -22,11 +26,27 @@ function App() {
           <Route path="/cart" element={<CartPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/order-confirmation" element={<OrderConfirmationPage />} />
+          <Route path="/my-orders" element={<MyOrdersPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/admin" element={
             <ProtectedRoute requireAdmin>
               <AdminOrdersPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/inventory" element={
+            <ProtectedRoute requireAdmin>
+              <AdminInventoryPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/users" element={
+            <ProtectedRoute requireAdmin>
+              <AdminUsersPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/products" element={
+            <ProtectedRoute requireAdmin>
+              <AdminProductsPage />
             </ProtectedRoute>
           } />
         </Routes>

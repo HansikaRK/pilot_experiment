@@ -31,14 +31,15 @@ export interface CustomerInfo {
 }
 
 export interface OrderPayload {
+  cartId: string;
   customer: CustomerInfo;
   items: Array<{
     productId: string;
-    name: string;
-    price: number;
     quantity: number;
   }>;
-  paymentStatus: 'success';
+  couponCode?: string;
+  hasHighValueGoods?: boolean;
+  totalWeightKg?: number;
 }
 
 export interface OrderResponse {
@@ -49,11 +50,22 @@ export interface OrderResponse {
     items: Array<{
       productId: string;
       name: string;
-      price: number;
+      unitPriceMinor: number;
+      amountMinor: number;
       quantity: number;
     }>;
-    totalAmount: number;
+    subtotalMinor: number;
+    discountTotalMinor: number;
+    shippingCostMinor: number;
+    taxAmountMinor: number;
+    totalAmountMinor: number;
+    currency: string;
+    status: string;
     createdAt: string;
+  };
+  paymentIntent: {
+    intentId: string;
+    status: string;
   };
 }
 
@@ -85,11 +97,12 @@ export interface AdminOrder {
   items: Array<{
     productId: string;
     name: string;
-    price: number;
+    unitPriceMinor: number;
+    amountMinor: number;
     quantity: number;
   }>;
-  totalAmount: number;
-  paymentStatus: 'success' | 'failed';
+  totalAmountMinor: number;
+  status: string;
   createdAt: string;
   updatedAt: string;
 }

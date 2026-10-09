@@ -2,6 +2,7 @@ import { useLocation, Link, Navigate } from 'react-router-dom';
 import { CheckCircle, Package, Calendar, CreditCard, ArrowRight } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
 import type { OrderResponse } from '../lib/types';
+import { useAuth } from '../context/AuthContext';
 
 interface LocationState {
   order: OrderResponse['order'];
@@ -10,7 +11,13 @@ interface LocationState {
 
 export default function OrderConfirmationPage() {
   const location = useLocation();
+  const { isAuthenticated } = useAuth();
   const state = location.state as LocationState | null;
+
+  // Invalidate state if user logs out
+  if (!isAuthenticated) {
+    return <Navigate to="/" replace />;
+  }
 
   if (!state || !state.order) {
     return <Navigate to="/" replace />;
@@ -98,15 +105,37 @@ export default function OrderConfirmationPage() {
                   <span className="text-gray-700 truncate pr-4">{item.name}</span>
                 </div>
                 <div className="text-gray-600 font-medium">
-                  {formatCurrency(item.price * item.quantity)}
+                  {formatCurrency(item.amountMinor / 100)}
                 </div>
               </div>
             ))}
           </div>
 
-          <div className="border-t border-gray-100 pt-4 mt-2 flex justify-between items-center">
+          {/* Pricing Details */}
+          <div className="border-t border-gray-100 pt-4 mt-2 flex flex-col gap-2 mb-4 text-sm">
+            <div className="flex justify-between text-gray-600">
+              <span>Subtotal</span>
+              <span>{formatCurrency(order.subtotalMinor / 100)}</span>
+            </div>
+            {order.discountTotalMinor > 0 && (
+              <div className="flex justify-between text-green-600">
+                <span>Discount</span>
+                <span>-{formatCurrency(order.discountTotalMinor / 100)}</span>
+              </div>
+            )}
+            <div className="flex justify-between text-gray-600">
+              <span>Shipping</span>
+              <span>{order.shippingCostMinor > 0 ? formatCurrency(order.shippingCostMinor / 100) : 'Free'}</span>
+            </div>
+            <div className="flex justify-between text-gray-600">
+              <span>Tax</span>
+              <span>{formatCurrency(order.taxAmountMinor / 100)}</span>
+            </div>
+          </div>
+
+          <div className="border-t border-gray-100 pt-4 flex justify-between items-center">
             <span className="font-bold text-lg text-gray-900">Total Amount</span>
-            <span className="font-bold text-2xl text-ceylon-maroon">{formatCurrency(order.totalAmount)}</span>
+            <span className="font-bold text-2xl text-ceylon-maroon">{formatCurrency(order.totalAmountMinor / 100)}</span>
           </div>
         </div>
       </div>

@@ -139,4 +139,17 @@ router.get('/me', protect, async (req, res) => {
   });
 });
 
+const { adminOnly } = require('../middleware/authMiddleware');
+
+// @route   GET /api/auth/users
+// @desc    Get all users (Admin only)
+router.get('/users', protect, adminOnly, async (req, res, next) => {
+  try {
+    const users = await User.find().select('-password').sort({ createdAt: -1 });
+    res.json({ success: true, users });
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;

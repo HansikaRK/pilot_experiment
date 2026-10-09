@@ -83,9 +83,11 @@ export default function AdminOrdersPage() {
                   </div>
                   <span className={cn(
                     "px-2.5 py-1 text-xs font-semibold rounded-full",
-                    order.paymentStatus === 'success' ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                    order.status === 'paid' ? "bg-green-100 text-green-700" : 
+                    order.status === 'pending' ? "bg-yellow-100 text-yellow-700" :
+                    "bg-red-100 text-red-700"
                   )}>
-                    {order.paymentStatus}
+                    {order.status}
                   </span>
                 </div>
                 
@@ -102,7 +104,7 @@ export default function AdminOrdersPage() {
                   </div>
                   <div className="text-right">
                     <span className="text-xs text-gray-500 uppercase tracking-wider font-semibold block">Total</span>
-                    <p className="font-bold text-ceylon-maroon">{formatCurrency(order.totalAmount)}</p>
+                    <p className="font-bold text-ceylon-maroon">{formatCurrency(order.totalAmountMinor / 100)}</p>
                   </div>
                 </div>
               </div>
@@ -150,13 +152,15 @@ export default function AdminOrdersPage() {
                     <td className="px-6 py-4">
                       <span className={cn(
                         "px-2.5 py-1 text-xs font-semibold rounded-full",
-                        order.paymentStatus === 'success' ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                        order.status === 'paid' ? "bg-green-100 text-green-700" : 
+                        order.status === 'pending' ? "bg-yellow-100 text-yellow-700" :
+                        "bg-red-100 text-red-700"
                       )}>
-                        {order.paymentStatus}
+                        {order.status}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <div className="font-bold text-ceylon-maroon">{formatCurrency(order.totalAmount)}</div>
+                      <div className="font-bold text-ceylon-maroon">{formatCurrency(order.totalAmountMinor / 100)}</div>
                     </td>
                   </tr>
                 ))}

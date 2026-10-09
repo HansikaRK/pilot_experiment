@@ -66,30 +66,73 @@ export default function Navbar() {
               />
             </Link>
           ))}
-          {isAdmin && (
+          {isAuthenticated && !isAdmin && (
             <Link
-              to="/admin"
+              to="/my-orders"
               className={cn(
-                'font-medium text-sm transition-colors hover:text-ceylon-maroon relative group flex items-center gap-1',
-                location.pathname === '/admin' ? 'text-ceylon-maroon' : ''
+                'font-medium text-sm transition-colors hover:text-ceylon-gold relative group',
+                location.pathname === '/my-orders' ? 'text-ceylon-gold' : ''
               )}
             >
-              Admin
+              My Orders
             </Link>
           )}
-          <Link to="/cart" className="relative group p-2">
-            <ShoppingCart className="h-6 w-6 transition-transform group-hover:scale-110 group-hover:text-ceylon-gold" />
-            {cartCount > 0 && (
-              <span
+          {isAdmin && (
+            <div className="flex items-center gap-6 border-l border-gray-300 pl-6 ml-2">
+              <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Admin</span>
+              <Link
+                to="/admin"
                 className={cn(
-                  'absolute top-0 right-0 inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold text-white bg-ceylon-maroon rounded-full',
-                  isPulsing ? 'scale-125 transition-transform' : 'scale-100 transition-transform'
+                  'font-medium text-sm transition-colors hover:text-ceylon-maroon',
+                  location.pathname === '/admin' ? 'text-ceylon-maroon' : 'text-gray-600'
                 )}
               >
-                {cartCount}
-              </span>
-            )}
-          </Link>
+                Orders
+              </Link>
+              <Link
+                to="/admin/inventory"
+                className={cn(
+                  'font-medium text-sm transition-colors hover:text-ceylon-maroon',
+                  location.pathname === '/admin/inventory' ? 'text-ceylon-maroon' : 'text-gray-600'
+                )}
+              >
+                Inventory
+              </Link>
+              <Link
+                to="/admin/products"
+                className={cn(
+                  'font-medium text-sm transition-colors hover:text-ceylon-maroon',
+                  location.pathname === '/admin/products' ? 'text-ceylon-maroon' : 'text-gray-600'
+                )}
+              >
+                Products
+              </Link>
+              <Link
+                to="/admin/users"
+                className={cn(
+                  'font-medium text-sm transition-colors hover:text-ceylon-maroon',
+                  location.pathname === '/admin/users' ? 'text-ceylon-maroon' : 'text-gray-600'
+                )}
+              >
+                Users
+              </Link>
+            </div>
+          )}
+          {!isAdmin && (
+            <Link to="/cart" className="relative group p-2">
+              <ShoppingCart className="h-6 w-6 transition-transform group-hover:scale-110 group-hover:text-ceylon-gold" />
+              {cartCount > 0 && (
+                <span
+                  className={cn(
+                    'absolute top-0 right-0 inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold text-white bg-ceylon-maroon rounded-full',
+                    isPulsing ? 'scale-125 transition-transform' : 'scale-100 transition-transform'
+                  )}
+                >
+                  {cartCount}
+                </span>
+              )}
+            </Link>
+          )}
 
           <div className="h-6 w-px bg-gray-300 mx-2" />
 
@@ -119,14 +162,16 @@ export default function Navbar() {
 
         {/* Mobile menu toggle */}
         <div className="md:hidden flex items-center gap-4">
-          <Link to="/cart" className="relative p-2">
-            <ShoppingCart className="h-6 w-6 text-ceylon-gold" />
-            {cartCount > 0 && (
-              <span className="absolute top-0 right-0 inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold text-white bg-ceylon-maroon rounded-full">
-                {cartCount}
-              </span>
-            )}
-          </Link>
+          {!isAdmin && (
+            <Link to="/cart" className="relative p-2">
+              <ShoppingCart className="h-6 w-6 text-ceylon-gold" />
+              {cartCount > 0 && (
+                <span className="absolute top-0 right-0 inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold text-white bg-ceylon-maroon rounded-full">
+                  {cartCount}
+                </span>
+              )}
+            </Link>
+          )}
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className="p-2 text-ceylon-charcoal hover:text-ceylon-gold transition-colors"
@@ -153,14 +198,50 @@ export default function Navbar() {
                 {link.name}
               </Link>
             ))}
-            {isAdmin && (
+            {isAuthenticated && !isAdmin && (
               <Link
-                to="/admin"
+                to="/my-orders"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="font-medium p-2 rounded-md hover:bg-ceylon-cream/50 transition-colors text-ceylon-maroon"
+                className={cn(
+                  'font-medium p-2 rounded-md transition-colors',
+                  location.pathname === '/my-orders' ? 'bg-ceylon-cream text-ceylon-gold' : 'hover:bg-ceylon-cream/50'
+                )}
               >
-                Admin Dashboard
+                My Orders
               </Link>
+            )}
+            {isAdmin && (
+              <div className="flex flex-col gap-2 mt-2 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Admin Panel</span>
+                <Link
+                  to="/admin"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="font-medium p-2 rounded-md hover:bg-gray-200 transition-colors text-ceylon-maroon"
+                >
+                  Orders
+                </Link>
+                <Link
+                  to="/admin/inventory"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="font-medium p-2 rounded-md hover:bg-gray-200 transition-colors text-ceylon-maroon"
+                >
+                  Inventory
+                </Link>
+                <Link
+                  to="/admin/products"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="font-medium p-2 rounded-md hover:bg-gray-200 transition-colors text-ceylon-maroon"
+                >
+                  Products
+                </Link>
+                <Link
+                  to="/admin/users"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="font-medium p-2 rounded-md hover:bg-gray-200 transition-colors text-ceylon-maroon"
+                >
+                  Users
+                </Link>
+              </div>
             )}
             <div className="h-px bg-gray-200 my-2" />
             {isAuthenticated ? (

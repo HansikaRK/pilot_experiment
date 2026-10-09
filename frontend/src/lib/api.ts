@@ -42,12 +42,22 @@ export const fetchProduct = async (id: string): Promise<Product> => {
 // --- Order API ---
 
 export const createOrder = async (order: OrderPayload): Promise<OrderResponse> => {
-  const { data } = await api.post<OrderResponse>('/orders', order);
+  const { data } = await api.post<OrderResponse>('/orders/checkout', order);
+  return data;
+};
+
+export const previewOrder = async (order: Partial<OrderPayload>): Promise<{ success: boolean; pricing: any }> => {
+  const { data } = await api.post('/orders/preview', order);
   return data;
 };
 
 export const fetchAllOrders = async (): Promise<{ success: boolean; orders: AdminOrder[] }> => {
   const { data } = await api.get<{ success: boolean; orders: AdminOrder[] }>('/orders');
+  return data;
+};
+
+export const fetchMyOrders = async (): Promise<{ success: boolean; orders: OrderResponse['order'][] }> => {
+  const { data } = await api.get<{ success: boolean; orders: OrderResponse['order'][] }>('/orders/myorders');
   return data;
 };
 

@@ -41,6 +41,10 @@ const productSchema = new mongoose.Schema(
       min: [1, 'Rating must be at least 1'],
       max: [5, 'Rating cannot exceed 5'],
       default: 4
+    },
+    isDeleted: {
+      type: Boolean,
+      default: false
     }
   },
   {
