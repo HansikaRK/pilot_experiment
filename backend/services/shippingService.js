@@ -1,5 +1,11 @@
 const ShippingZone = require('../models/ShippingZone');
 
+const DEFAULT_ISLAND_WIDE = {
+  baseRateMinor: 100000,
+  perKgRateMinor: 20000,
+  freeShippingThresholdMinor: 1000000
+};
+
 const shippingService = {
   /**
    * SHIP-001, SHIP-002: Calculate shipping cost
@@ -8,22 +14,26 @@ const shippingService = {
    * - free shipping threshold
    */
   calculateShipping: async (cartItems, subtotalAfterDiscountsMinor, district, country, hasHighValueGoods = false, totalWeightKg = 1) => {
+    const weightKg = Number(totalWeightKg) > 0 ? Number(totalWeightKg) : 1;
+    const districtName = (district || '').trim();
+    const countryName = (country || 'Sri Lanka').trim();
+
     // 1. Find matching zone (District first, then country fallback)
-    let zone = await ShippingZone.findOne({ type: 'district', value: district });
+    let zone = districtName
+      ? await ShippingZone.findOne({ type: 'district', value: new RegExp(`^${districtName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') })
+      : null;
     if (!zone) {
-      zone = await ShippingZone.findOne({ type: 'country', value: country });
+      zone = await ShippingZone.findOne({ type: 'country', value: new RegExp(`^${countryName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') });
     }
 
-    if (!zone) {
-      throw new Error(`Shipping is not supported to ${district}, ${country}`);
-    }
+    const rates = zone || DEFAULT_ISLAND_WIDE;
 
     // Free shipping check
-    if (zone.freeShippingThresholdMinor !== null && subtotalAfterDiscountsMinor >= zone.freeShippingThresholdMinor) {
+    if (rates.freeShippingThresholdMinor !== null && subtotalAfterDiscountsMinor >= rates.freeShippingThresholdMinor) {
       return 0; // Free shipping
     }
 
-    let shippingCostMinor = zone.baseRateMinor + Math.floor(zone.perKgRateMinor * totalWeightKg);
+    let shippingCostMinor = rates.baseRateMinor + Math.floor(rates.perKgRateMinor * weightKg);
 
     // High value insurance (e.g. Gems)
     if (hasHighValueGoods) {

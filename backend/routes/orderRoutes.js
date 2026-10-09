@@ -61,7 +61,9 @@ router.post('/checkout', protect, validateOrder, async (req, res, next) => {
       });
     }
 
-    const { cartId, customer, items, couponCode, hasHighValueGoods, totalWeightKg } = req.body;
+    const { cartId, customer, items, couponCode } = req.body;
+    const hasHighValueGoods = Boolean(req.body.hasHighValueGoods);
+    const totalWeightKg = Number(req.body.totalWeightKg) > 0 ? Number(req.body.totalWeightKg) : 1;
 
     const result = await checkoutService.processCheckout(cartId, customer, items, couponCode, hasHighValueGoods, totalWeightKg, 0, req.user._id);
 
@@ -72,6 +74,9 @@ router.post('/checkout', protect, validateOrder, async (req, res, next) => {
       reservationExpiresAt: result.reservationExpiresAt
     });
   } catch (error) {
+    if (error && error.message) {
+      return res.status(400).json({ success: false, message: error.message });
+    }
     next(error);
   }
 });
@@ -80,7 +85,9 @@ router.post('/checkout', protect, validateOrder, async (req, res, next) => {
 // @desc    Preview pricing without creating order or reservations
 router.post('/preview', async (req, res, next) => {
   try {
-    const { items, customer, couponCode, hasHighValueGoods, totalWeightKg } = req.body;
+    const { items, customer, couponCode } = req.body;
+    const hasHighValueGoods = Boolean(req.body.hasHighValueGoods);
+    const totalWeightKg = Number(req.body.totalWeightKg) > 0 ? Number(req.body.totalWeightKg) : 1;
     if (!items || items.length === 0) return res.status(400).json({ success: false, message: 'No items' });
     
     // Preliminary pricing
