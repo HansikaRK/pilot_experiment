@@ -7,7 +7,7 @@ import { formatCurrency } from '../lib/utils';
 import type { OrderResponse } from '../lib/types';
 
 export default function MyOrdersPage() {
-  const { isAuthenticated, loading: authLoading } = useAuth();
+  const { isAuthenticated, isAdmin, loading: authLoading } = useAuth();
   const [orders, setOrders] = useState<OrderResponse['order'][]>([]);
   const [loading, setLoading] = useState(true);
 
