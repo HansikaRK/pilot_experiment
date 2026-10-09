@@ -1,5 +1,6 @@
 const Order = require('../models/Order');
 const OrderHistory = require('../models/OrderHistory');
+const PaymentIntent = require('../models/PaymentIntent');
 const inventoryService = require('./inventoryService');
 const mongoose = require('mongoose');
 
@@ -46,10 +47,29 @@ const orderService = {
 
       // ORDER-003: Cancellation logic
       if (newStatus === 'cancelled') {
-        // Release inventory reservation
+        // Release inventory reservation.
+        //
+        // This covers two scenarios:
+        //  1. pending → cancelled (pre-payment): reservation is 'active'.
+        //     releaseReservation restores batch stock and marks it 'released'.
+        //
+        //  2. paid → cancelled (post-payment): reservation is already 'committed'.
+        //     releaseReservation now also accepts 'committed' status, restores batch
+        //     stock, and marks it 'released'. Without this fix the inventory was
+        //     silently orphaned.
         await inventoryService.releaseReservation(order.cartId, 'released');
-        
-        // In a real app, we might also reverse coupon usage here by decrementing globalUsageCount
+
+        // If the order was paid, void the payment intent so it can no longer be
+        // charged or accidentally re-refunded after the stock has been returned.
+        if (currentStatus === 'paid') {
+          await PaymentIntent.findOneAndUpdate(
+            { orderId: order._id, status: 'succeeded' },
+            { status: 'refunded' }
+          );
+        }
+
+        // TODO: Reverse coupon usage by decrementing Coupon.globalUsageCount
+        //       if order.couponApplied is set.
       }
 
       return order;

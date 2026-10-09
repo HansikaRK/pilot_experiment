@@ -33,15 +33,28 @@ const checkoutService = {
       }
 
       // Preliminary pricing to get subtotal after discounts (for free shipping threshold)
+      // and to identify the post-discount value of high-value (Gems) items for insurance.
       const preliminaryPricing = await pricingService.calculatePricing(cartItemsForPricing, couponCode, 0, 0);
+
+      // Compute the post-discount value of insurable (high-value) items.
+      // Insurance must be based on the Gems-only portion of the cart after discounts —
+      // not the full subtotal — to avoid overcharging when the cart is mixed.
+      // If the caller explicitly marks no high-value goods, skip insurance entirely.
+      const highValueSubtotalMinor = hasHighValueGoods
+        ? preliminaryPricing.lines
+            .filter(line => line.category === 'Gems')
+            .reduce((sum, line) => sum + line.amountMinor, 0)
+        : 0;
+
+      const subtotalAfterDiscountsMinor = preliminaryPricing.subtotalMinor - preliminaryPricing.discountTotalMinor;
       
       // 3. Calculate shipping
       const shippingCostMinor = await shippingService.calculateShipping(
         cartItemsForPricing, 
-        preliminaryPricing.subtotalMinor - preliminaryPricing.discountTotalMinor,
+        subtotalAfterDiscountsMinor,
         customer.address.city, // using city as district
         'Sri Lanka', 
-        hasHighValueGoods,
+        highValueSubtotalMinor,
         totalWeightKg
       );
 

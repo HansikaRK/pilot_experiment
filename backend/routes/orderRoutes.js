@@ -6,6 +6,7 @@ const Order = require('../models/Order');
 const { protect, adminOnly } = require('../middleware/authMiddleware');
 const checkoutService = require('../services/checkoutService');
 const paymentService = require('../services/paymentService');
+const orderService = require('../services/orderService');
 
 // @route   GET /api/orders
 // @desc    Get all orders (admin only)
@@ -103,21 +104,32 @@ router.post('/preview', async (req, res, next) => {
           productId: product._id,
           quantity: item.quantity,
           name: product.name,
-          price: product.price
+          price: product.price,
+          category: product.category  // needed so pricingService lines carry category for insurance logic
         });
       }
     }
 
     const preliminaryPricing = await pricingService.calculatePricing(cartItemsForPricing, couponCode, 0, 0);
+
+    // Derive insurable value: post-discount value of Gems items only.
+    // Using the actual Gems subtotal (not the full cart) matches the fix in checkoutService.
+    const highValueSubtotalMinor = hasHighValueGoods
+      ? preliminaryPricing.lines
+          .filter(line => line.category === 'Gems')
+          .reduce((sum, line) => sum + line.amountMinor, 0)
+      : 0;
+
+    const subtotalAfterDiscountsMinor = preliminaryPricing.subtotalMinor - preliminaryPricing.discountTotalMinor;
     
     let shippingCostMinor = 0;
     if (customer && customer.address && customer.address.city) {
       shippingCostMinor = await shippingService.calculateShipping(
         cartItemsForPricing, 
-        preliminaryPricing.subtotalMinor - preliminaryPricing.discountTotalMinor,
+        subtotalAfterDiscountsMinor,
         customer.address.city,
         'Sri Lanka', 
-        hasHighValueGoods,
+        highValueSubtotalMinor,
         totalWeightKg
       );
     }
@@ -145,6 +157,53 @@ router.post('/webhook', async (req, res, next) => {
     const result = await paymentService.handleWebhook(req.body);
     res.json({ success: true, result });
   } catch (error) {
+    next(error);
+  }
+});
+
+// @route   PATCH /api/orders/:id/cancel
+// @desc    Cancel an order and restore inventory.
+//          - Customers may cancel their own orders only when status is 'pending'.
+//          - Admins may cancel any order whose current status allows cancellation
+//            (i.e., 'pending' or 'paid').
+router.patch('/:id/cancel', protect, async (req, res, next) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order not found' });
+    }
+
+    const isAdmin = req.user.role === 'admin';
+    const isOwner = (
+      (order.user && order.user.toString() === req.user._id.toString()) ||
+      order.customer.email === req.user.email
+    );
+
+    if (!isAdmin && !isOwner) {
+      return res.status(403).json({ success: false, message: 'Forbidden' });
+    }
+
+    // Customers may only cancel pending orders.
+    // Admins may cancel pending or paid orders (handled by the state-machine in orderService).
+    if (!isAdmin && order.status !== 'pending') {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot cancel an order with status '${order.status}'.`
+      });
+    }
+
+    const actor = isAdmin ? 'admin' : 'customer';
+    const reason = req.body.reason || 'Cancelled by request';
+
+    const updatedOrder = await orderService.transitionOrderState(
+      order._id, 'cancelled', actor, reason
+    );
+
+    res.json({ success: true, order: updatedOrder });
+  } catch (error) {
+    if (error && error.message) {
+      return res.status(400).json({ success: false, message: error.message });
+    }
     next(error);
   }
 });
