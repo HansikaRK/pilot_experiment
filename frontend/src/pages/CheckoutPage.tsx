@@ -238,7 +238,7 @@ export default function CheckoutPage() {
                 ) : (
                   <>
                     <Lock className="w-5 h-5" />
-                    Pay {formatCurrency(cartTotal)}
+                    Pay {formatCurrency(preview ? preview.totalMinor / 100 : cartTotal)}
                   </>
                 )}
               </button>

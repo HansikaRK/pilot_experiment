@@ -6,6 +6,7 @@ const Order = require('../models/Order');
 const { protect, adminOnly } = require('../middleware/authMiddleware');
 const checkoutService = require('../services/checkoutService');
 const paymentService = require('../services/paymentService');
+const orderService = require('../services/orderService');
 
 // @route   GET /api/orders
 // @desc    Get all orders (admin only)
@@ -103,7 +104,8 @@ router.post('/preview', async (req, res, next) => {
           productId: product._id,
           quantity: item.quantity,
           name: product.name,
-          price: product.price
+          price: product.price,
+          category: product.category
         });
       }
     }
@@ -118,7 +120,8 @@ router.post('/preview', async (req, res, next) => {
         customer.address.city,
         'Sri Lanka', 
         hasHighValueGoods,
-        totalWeightKg
+        totalWeightKg,
+        preliminaryPricing.lines
       );
     }
 
@@ -145,6 +148,62 @@ router.post('/webhook', async (req, res, next) => {
     const result = await paymentService.handleWebhook(req.body);
     res.json({ success: true, result });
   } catch (error) {
+    next(error);
+  }
+});
+
+// @route   PATCH /api/orders/:id/cancel
+// @desc    Cancel an order.
+//          - Customers may cancel their own orders in 'pending' status only.
+//          - Admins may cancel any order in 'pending' or 'paid' status.
+//          Inventory associated with the order is released back to stock in
+//          both cases (active reservation for pending, committed for paid).
+router.patch('/:id/cancel', protect, async (req, res, next) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order not found' });
+    }
+
+    const isAdmin = req.user.role === 'admin';
+    const isOwner = order.user
+      ? order.user.toString() === req.user._id.toString()
+      : order.customer.email === req.user.email;
+
+    if (!isAdmin && !isOwner) {
+      return res.status(403).json({ success: false, message: 'Not authorised to cancel this order' });
+    }
+
+    // Customers may only cancel pending orders; admins may also cancel paid orders
+    const cancellableByCustomer = ['pending'];
+    const cancellableByAdmin   = ['pending', 'paid'];
+    const allowed = isAdmin ? cancellableByAdmin : cancellableByCustomer;
+
+    if (!allowed.includes(order.status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot cancel an order that is in '${order.status}' status`
+      });
+    }
+
+    const actor  = isAdmin ? 'admin' : 'customer';
+    const reason = req.body.reason || 'Cancelled by ' + actor;
+
+    // transitionOrderState enforces the state machine and calls
+    // inventoryService.releaseReservation, which now handles both
+    // active (pending) and committed (paid) reservations.
+    const updatedOrder = await orderService.transitionOrderState(
+      order._id,
+      'cancelled',
+      actor,
+      reason
+    );
+
+    res.json({ success: true, order: updatedOrder });
+  } catch (error) {
+    if (error && error.message) {
+      return res.status(400).json({ success: false, message: error.message });
+    }
     next(error);
   }
 });

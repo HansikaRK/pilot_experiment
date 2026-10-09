@@ -28,21 +28,23 @@ const checkoutService = {
           productId: product._id,
           quantity: item.quantity,
           name: product.name,
-          price: product.price
+          price: product.price,
+          category: product.category
         });
       }
 
       // Preliminary pricing to get subtotal after discounts (for free shipping threshold)
       const preliminaryPricing = await pricingService.calculatePricing(cartItemsForPricing, couponCode, 0, 0);
       
-      // 3. Calculate shipping
+      // 3. Calculate shipping (pass pricing lines so insurance uses Gems-only discounted subtotal)
       const shippingCostMinor = await shippingService.calculateShipping(
         cartItemsForPricing, 
         preliminaryPricing.subtotalMinor - preliminaryPricing.discountTotalMinor,
         customer.address.city, // using city as district
         'Sri Lanka', 
         hasHighValueGoods,
-        totalWeightKg
+        totalWeightKg,
+        preliminaryPricing.lines  // FIX: enables server-side per-category insurance calculation
       );
 
       // 4. Calculate final pricing (with shipping & tax)

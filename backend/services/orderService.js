@@ -23,10 +23,6 @@ const orderService = {
       if (!order) throw new Error('Order not found');
 
       const currentStatus = order.status;
-      
-      if (currentStatus === newStatus) {
-        return order; // No-op
-      }
 
       if (!VALID_TRANSITIONS[currentStatus].includes(newStatus)) {
         throw new Error(`Invalid state transition from ${currentStatus} to ${newStatus}`);

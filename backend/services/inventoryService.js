@@ -134,16 +134,22 @@ const inventoryService = {
 
   /**
    * Release a reservation (e.g., after payment failure, cancellation, or expiry).
+   *
+   * Handles both 'active' and 'committed' reservations so that stock is correctly
+   * restored when a paid order is cancelled or refunded (its reservation will
+   * already be in the 'committed' state after a successful payment webhook).
    */
   releaseReservation: async (cartId, newStatus = 'released') => {
     try {
-      const reservation = await Reservation.findOne({ 
-        cartId, 
-        status: 'active' 
+      // Accept both active (pre-payment) and committed (post-payment) reservations
+      // so cancellation after payment also restores stock.
+      const reservation = await Reservation.findOne({
+        cartId,
+        status: { $in: ['active', 'committed'] }
       });
-      
+
       if (!reservation) {
-        return null; // Already processed or doesn't exist
+        return null; // Already released/expired or doesn't exist
       }
 
       // Restore stock for all allocations (or product.stock when no batches were used)
