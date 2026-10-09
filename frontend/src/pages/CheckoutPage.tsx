@@ -103,15 +103,19 @@ export default function CheckoutPage() {
           productId: i.productId,
           quantity: i.quantity
         })),
-        couponCode: couponCode || undefined
+        couponCode: couponCode || undefined,
+        totalWeightKg: 1
       };
 
       const res = await createOrder(orderPayload);
       clearCart();
       navigate('/order-confirmation', { state: { order: res.order, transactionId } });
 
-    } catch (err) {
-      setPaymentError('An error occurred during checkout. Please try again.');
+    } catch (err: any) {
+      const apiMessage =
+        err.response?.data?.message ||
+        err.response?.data?.errors?.[0]?.message;
+      setPaymentError(apiMessage || 'An error occurred during checkout. Please try again.');
       setIsProcessing(false);
     }
   };

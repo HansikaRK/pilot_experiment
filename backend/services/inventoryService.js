@@ -22,6 +22,11 @@ const inventoryService = {
       const reservationItems = [];
 
       for (const item of items) {
+        const productDoc = await Product.findById(item.productId);
+        if (!productDoc || productDoc.isDeleted) {
+          throw new Error(`Product not found: ${item.productId}`);
+        }
+
         let remainingQuantityToReserve = item.quantity;
         const itemAllocations = [];
 
@@ -63,6 +68,20 @@ const inventoryService = {
           });
 
           remainingQuantityToReserve -= quantityToTake;
+        }
+
+        if (remainingQuantityToReserve > 0 && batches.length === 0) {
+          const product = await Product.findOneAndUpdate(
+            { _id: item.productId, isDeleted: { $ne: true }, stock: { $gte: remainingQuantityToReserve } },
+            { $inc: { stock: -remainingQuantityToReserve } },
+            { new: true }
+          );
+
+          if (!product) {
+            throw new Error(`Insufficient stock for product ${item.productId}`);
+          }
+
+          remainingQuantityToReserve = 0;
         }
 
         if (remainingQuantityToReserve > 0) {
@@ -127,8 +146,12 @@ const inventoryService = {
         return null; // Already processed or doesn't exist
       }
 
-      // Restore stock for all allocations
+      // Restore stock for all allocations (or product.stock when no batches were used)
       for (const item of reservation.items) {
+        if (!item.allocations || item.allocations.length === 0) {
+          await Product.findByIdAndUpdate(item.productId, { $inc: { stock: item.quantity } });
+          continue;
+        }
         for (const alloc of item.allocations) {
           await InventoryBatch.findByIdAndUpdate(
             alloc.batchId,

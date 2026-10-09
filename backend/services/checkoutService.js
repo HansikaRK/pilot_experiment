@@ -12,6 +12,8 @@ const checkoutService = {
    * Cross-module checkout flow
    */
   processCheckout: async (cartId, customer, items, couponCode, hasHighValueGoods = false, totalWeightKg = 1, taxRate = 0, userId = null) => {
+    hasHighValueGoods = Boolean(hasHighValueGoods);
+    totalWeightKg = Number(totalWeightKg) > 0 ? Number(totalWeightKg) : 1;
     // 1. Reserve inventory atomically
     const reservation = await inventoryService.reserveStock(cartId, items);
 
