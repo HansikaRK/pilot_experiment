@@ -134,12 +134,15 @@ const inventoryService = {
 
   /**
    * Release a reservation (e.g., after payment failure, cancellation, or expiry).
+   * Handles both 'active' reservations (pre-payment cancellation) and
+   * 'committed' reservations (post-payment cancellation) so that inventory
+   * is always restored when an order is cancelled regardless of its payment state.
    */
   releaseReservation: async (cartId, newStatus = 'released') => {
     try {
       const reservation = await Reservation.findOne({ 
         cartId, 
-        status: 'active' 
+        status: { $in: ['active', 'committed'] }
       });
       
       if (!reservation) {

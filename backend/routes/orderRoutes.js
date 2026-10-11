@@ -138,6 +138,62 @@ router.post('/preview', async (req, res, next) => {
   }
 });
 
+// @route   PATCH /api/orders/:id/cancel
+// @desc    Cancel an order and release its inventory reservation.
+//          Customers may cancel their own pending orders.
+//          Admins may cancel pending or paid orders.
+router.patch('/:id/cancel', protect, async (req, res, next) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order not found' });
+    }
+
+    const isAdmin = req.user.role === 'admin';
+    const isOwner =
+      (order.user && order.user.toString() === req.user._id.toString()) ||
+      order.customer.email === req.user.email;
+
+    if (!isAdmin && !isOwner) {
+      return res.status(403).json({ success: false, message: 'Not authorised to cancel this order' });
+    }
+
+    // Customers can only cancel their own pending orders
+    if (!isAdmin && order.status !== 'pending') {
+      return res.status(400).json({
+        success: false,
+        message: 'Only pending orders can be cancelled by customers'
+      });
+    }
+
+    // Admins can cancel pending or paid orders (packed/shipped/delivered are too far along)
+    if (isAdmin && !['pending', 'paid'].includes(order.status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot cancel an order with status '${order.status}'`
+      });
+    }
+
+    const actor = isAdmin ? 'admin' : 'customer';
+    const reason = req.body.reason || 'Cancelled by ' + actor;
+
+    const orderService = require('../services/orderService');
+    const updatedOrder = await orderService.transitionOrderState(
+      order._id,
+      'cancelled',
+      actor,
+      reason
+    );
+
+    res.json({ success: true, order: updatedOrder });
+  } catch (error) {
+    if (error && error.message) {
+      return res.status(400).json({ success: false, message: error.message });
+    }
+    next(error);
+  }
+});
+
 // @route   POST /api/orders/webhook
 // @desc    Simulated payment webhook
 router.post('/webhook', async (req, res, next) => {
