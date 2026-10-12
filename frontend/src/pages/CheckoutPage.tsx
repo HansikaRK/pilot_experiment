@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Lock, Loader2, CreditCard, User, MapPin } from 'lucide-react';
+import { Lock, Loader2, CreditCard, User, MapPin, Shield } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { formatCurrency, simulatePayment, cn } from '../lib/utils';
@@ -18,6 +18,7 @@ export default function CheckoutPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [couponCode, setCouponCode] = useState('');
+  const [preview, setPreview] = useState<any>(null);
 
   const customerForm = useForm<CheckoutFormData>({
     resolver: zodResolver(checkoutSchema),
@@ -43,8 +44,6 @@ export default function CheckoutPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const [preview, setPreview] = useState<any>(null);
-  
   useEffect(() => {
     if (step === 2 && customerData) {
       const loadPreview = async () => {
@@ -74,13 +73,13 @@ export default function CheckoutPage() {
 
   const onPaymentSubmit = async (data: PaymentFormData) => {
     if (!customerData) return;
-    
+
     setIsProcessing(true);
     setPaymentError(null);
 
     try {
       const { success, transactionId } = await simulatePayment(data.cardNumber);
-      
+
       if (!success) {
         setPaymentError('Payment declined. Please try a different card.');
         setIsProcessing(false);
@@ -143,13 +142,16 @@ export default function CheckoutPage() {
     );
   };
 
+  // Determine which cart items have insurance (for the sidebar pre-preview display)
+  const insuredItems = items.filter(i => (i.insuranceRate ?? 0) > 0);
+
   return (
     <div className="container mx-auto px-4 md:px-6 py-12 max-w-6xl animate-fade-in">
       <h1 className="text-3xl font-bold text-ceylon-charcoal mb-8 tracking-tight">Checkout</h1>
 
       <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
         <div className="w-full lg:w-2/3">
-          
+
           {/* Step 1: Customer Details */}
           <div className={cn(
             "bg-white rounded-xl shadow-sm border border-gray-100 p-6 md:p-8 mb-6 transition-all duration-500",
@@ -161,8 +163,8 @@ export default function CheckoutPage() {
                 Customer Information
               </h2>
               {step === 2 && (
-                <button 
-                  onClick={() => setStep(1)} 
+                <button
+                  onClick={() => setStep(1)}
                   className="text-sm text-ceylon-maroon font-medium hover:underline pointer-events-auto"
                 >
                   Edit
@@ -181,7 +183,7 @@ export default function CheckoutPage() {
                 <InputField label="City" name="city" form={customerForm} />
                 <InputField label="Postal Code" name="postalCode" form={customerForm} />
               </div>
-              <button 
+              <button
                 type="submit"
                 className="mt-6 w-full py-3 bg-ceylon-charcoal text-white font-medium rounded-lg hover:bg-ceylon-slate transition-colors"
               >
@@ -212,7 +214,7 @@ export default function CheckoutPage() {
                   {paymentError}
                 </div>
               )}
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
                 <div className="md:col-span-2">
                   <InputField label="Cardholder Name" name="cardholderName" form={paymentForm} icon={User} />
@@ -224,8 +226,8 @@ export default function CheckoutPage() {
                 <InputField label="Expiry Date" name="expiryDate" form={paymentForm} placeholder="MM/YY" />
                 <InputField label="CVV" name="cvv" form={paymentForm} placeholder="123" />
               </div>
-              
-              <button 
+
+              <button
                 type="submit"
                 disabled={isProcessing}
                 className="mt-6 w-full py-4 bg-ceylon-gold text-white font-bold rounded-lg hover:bg-ceylon-gold-light transition-colors shadow-md flex justify-center items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
@@ -238,20 +240,21 @@ export default function CheckoutPage() {
                 ) : (
                   <>
                     <Lock className="w-5 h-5" />
-                    Pay {formatCurrency(cartTotal)}
+                    Pay {preview ? formatCurrency(preview.totalMinor / 100) : formatCurrency(cartTotal)}
                   </>
                 )}
               </button>
             </form>
           </div>
-          
+
         </div>
 
         {/* Order Summary Sidebar */}
         <div className="w-full lg:w-1/3">
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 sticky top-24 glass-card">
             <h2 className="text-lg font-bold text-ceylon-charcoal mb-4 border-b border-gray-100 pb-3">Order Summary</h2>
-            
+
+            {/* Cart items */}
             <div className="flex flex-col gap-3 max-h-60 overflow-y-auto pr-2 mb-4">
               {items.map(item => (
                 <div key={item.productId} className="flex items-center gap-3">
@@ -271,32 +274,84 @@ export default function CheckoutPage() {
                 </div>
               ))}
             </div>
-            
-            <div className="border-t border-gray-100 pt-4 mt-4 flex flex-col gap-2 mb-4 text-sm">
+
+            {/* Coupon code */}
+            <div className="border-t border-gray-100 pt-4 mb-4">
               <div className="flex gap-2">
-                <input 
-                  type="text" 
-                  placeholder="Coupon Code" 
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-ceylon-gold"
+                <input
+                  type="text"
+                  placeholder="Coupon Code"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-ceylon-gold"
                   value={couponCode}
                   onChange={(e) => setCouponCode(e.target.value)}
                   disabled={step === 1}
                 />
               </div>
-              <div className="flex justify-between text-gray-600 mt-2">
+            </div>
+
+            {/* Pricing breakdown */}
+            <div className="flex flex-col gap-2 text-sm">
+              <div className="flex justify-between text-gray-600">
                 <span>Subtotal</span>
                 <span>{preview ? formatCurrency(preview.subtotalMinor / 100) : formatCurrency(cartTotal)}</span>
               </div>
+
               {preview && preview.discountTotalMinor > 0 && (
                 <div className="flex justify-between text-green-600">
                   <span>Discount</span>
                   <span>-{formatCurrency(preview.discountTotalMinor / 100)}</span>
                 </div>
               )}
+
               <div className="flex justify-between text-gray-600">
                 <span>Shipping</span>
-                <span>{preview ? (preview.shippingCostMinor > 0 ? formatCurrency(preview.shippingCostMinor / 100) : 'Free') : 'Calculated at payment details'}</span>
+                <span>
+                  {preview
+                    ? (preview.shippingCostMinor > 0 ? formatCurrency(preview.shippingCostMinor / 100) : 'Free')
+                    : 'Calculated at payment step'}
+                </span>
               </div>
+
+              {/* Insurance breakdown — per product */}
+              {preview && preview.insuranceLines && preview.insuranceLines.length > 0 && (
+                <div className="mt-2 pt-2 border-t border-gray-100">
+                  <div className="flex items-center gap-1.5 text-gray-700 font-semibold mb-2">
+                    <Shield className="w-3.5 h-3.5 text-amber-500" />
+                    Insurance Charges
+                  </div>
+                  {preview.insuranceLines.map((ins: any, idx: number) => (
+                    <div key={idx} className="flex justify-between text-gray-600 text-xs mb-1 pl-1">
+                      <span className="flex-1 truncate mr-2">
+                        <span className="font-medium">{ins.productName}</span>
+                        <span className="text-gray-400 ml-1">· {ins.rate}% {ins.label}</span>
+                        {ins.required && (
+                          <span className="ml-1 text-[9px] font-bold uppercase bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">
+                            🔒 Mandatory
+                          </span>
+                        )}
+                      </span>
+                      <span className="font-medium shrink-0">{formatCurrency(ins.amountMinor / 100)}</span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between text-gray-700 font-medium text-xs pt-1 border-t border-gray-100 mt-1">
+                    <span>Insurance Total</span>
+                    <span>{formatCurrency(preview.insuranceTotalMinor / 100)}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Pre-preview insurance notice (before step 2 loads the preview) */}
+              {!preview && insuredItems.length > 0 && (
+                <div className="mt-2 pt-2 border-t border-gray-100 flex items-start gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+                  <Shield className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                  <span>
+                    {insuredItems.length === 1
+                      ? `"${insuredItems[0].name}" carries a ${insuredItems[0].insuranceRate}% ${insuredItems[0].insuranceLabel || 'insurance'} charge.`
+                      : `${insuredItems.length} items in your cart carry insurance charges that will be shown at payment step.`}
+                  </span>
+                </div>
+              )}
+
               {preview && preview.taxAmountMinor > 0 && (
                 <div className="flex justify-between text-gray-600">
                   <span>Tax</span>
@@ -304,10 +359,13 @@ export default function CheckoutPage() {
                 </div>
               )}
             </div>
-            
-            <div className="border-t border-gray-100 pt-4 flex justify-between items-center">
+
+            {/* Total */}
+            <div className="border-t border-gray-100 pt-4 mt-3 flex justify-between items-center">
               <span className="font-bold text-lg text-ceylon-charcoal">Total</span>
-              <span className="font-bold text-xl text-ceylon-maroon">{preview ? formatCurrency(preview.totalMinor / 100) : formatCurrency(cartTotal)}</span>
+              <span className="font-bold text-xl text-ceylon-maroon">
+                {preview ? formatCurrency(preview.totalMinor / 100) : formatCurrency(cartTotal)}
+              </span>
             </div>
           </div>
         </div>

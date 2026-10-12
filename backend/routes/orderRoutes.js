@@ -6,6 +6,7 @@ const Order = require('../models/Order');
 const { protect, adminOnly } = require('../middleware/authMiddleware');
 const checkoutService = require('../services/checkoutService');
 const paymentService = require('../services/paymentService');
+const orderService = require('../services/orderService');
 
 // @route   GET /api/orders
 // @desc    Get all orders (admin only)
@@ -62,10 +63,9 @@ router.post('/checkout', protect, validateOrder, async (req, res, next) => {
     }
 
     const { cartId, customer, items, couponCode } = req.body;
-    const hasHighValueGoods = Boolean(req.body.hasHighValueGoods);
     const totalWeightKg = Number(req.body.totalWeightKg) > 0 ? Number(req.body.totalWeightKg) : 1;
 
-    const result = await checkoutService.processCheckout(cartId, customer, items, couponCode, hasHighValueGoods, totalWeightKg, 0, req.user._id);
+    const result = await checkoutService.processCheckout(cartId, customer, items, couponCode, totalWeightKg, 0, req.user._id);
 
     res.status(201).json({
       success: true,
@@ -86,15 +86,14 @@ router.post('/checkout', protect, validateOrder, async (req, res, next) => {
 router.post('/preview', async (req, res, next) => {
   try {
     const { items, customer, couponCode } = req.body;
-    const hasHighValueGoods = Boolean(req.body.hasHighValueGoods);
     const totalWeightKg = Number(req.body.totalWeightKg) > 0 ? Number(req.body.totalWeightKg) : 1;
     if (!items || items.length === 0) return res.status(400).json({ success: false, message: 'No items' });
-    
+
     // Preliminary pricing
     const pricingService = require('../services/pricingService');
     const shippingService = require('../services/shippingService');
     const Product = require('../models/Product');
-    
+
     const cartItemsForPricing = [];
     for (const item of items) {
       const product = await Product.findById(item.productId);
@@ -109,15 +108,15 @@ router.post('/preview', async (req, res, next) => {
     }
 
     const preliminaryPricing = await pricingService.calculatePricing(cartItemsForPricing, couponCode, 0, 0);
-    
+
     let shippingCostMinor = 0;
     if (customer && customer.address && customer.address.city) {
       shippingCostMinor = await shippingService.calculateShipping(
-        cartItemsForPricing, 
+        cartItemsForPricing,
         preliminaryPricing.subtotalMinor - preliminaryPricing.discountTotalMinor,
         customer.address.city,
-        'Sri Lanka', 
-        hasHighValueGoods,
+        'Sri Lanka',
+        false, // hasHighValueGoods no longer used — insurance is server-authoritative
         totalWeightKg
       );
     }
@@ -145,6 +144,64 @@ router.post('/webhook', async (req, res, next) => {
     const result = await paymentService.handleWebhook(req.body);
     res.json({ success: true, result });
   } catch (error) {
+    next(error);
+  }
+});
+
+// @route   PATCH /api/orders/:id/cancel
+// @desc    Cancel an order — customer (pending only) or admin (pending or paid)
+// @access  Protected
+router.patch('/:id/cancel', protect, [
+  body('reason').optional().trim().isLength({ max: 500 })
+], async (req, res, next) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order not found' });
+    }
+
+    const isAdmin = req.user.role === 'admin';
+    const isOwner =
+      (order.user && order.user.toString() === req.user._id.toString()) ||
+      order.customer.email === req.user.email;
+
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ success: false, message: 'Not authorized to cancel this order' });
+    }
+
+    // Customers can only cancel pending orders
+    if (!isAdmin && order.status !== 'pending') {
+      return res.status(400).json({
+        success: false,
+        message: 'Only pending orders can be cancelled. Please contact support for assistance.'
+      });
+    }
+
+    // Admins can cancel pending or paid orders
+    if (isAdmin && !['pending', 'paid'].includes(order.status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot cancel an order with status: "${order.status}".`
+      });
+    }
+
+    const actor = isAdmin ? `admin:${req.user._id}` : `customer:${req.user._id}`;
+    const reason = (req.body.reason && req.body.reason.trim())
+      ? req.body.reason.trim()
+      : isAdmin ? 'Cancelled by admin' : 'Cancelled by customer';
+
+    const updatedOrder = await orderService.transitionOrderState(
+      order._id,
+      'cancelled',
+      actor,
+      reason
+    );
+
+    res.json({ success: true, order: updatedOrder });
+  } catch (error) {
+    if (error && error.message) {
+      return res.status(400).json({ success: false, message: error.message });
+    }
     next(error);
   }
 });

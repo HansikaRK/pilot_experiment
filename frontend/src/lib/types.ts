@@ -7,6 +7,9 @@ export interface Product {
   image: string;
   stock: number;
   rating: number;
+  insuranceRate: number;
+  insuranceLabel: string;
+  requiresInsurance: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -17,6 +20,9 @@ export interface CartItem {
   price: number;
   image: string;
   quantity: number;
+  insuranceRate: number;
+  insuranceLabel: string;
+  requiresInsurance: boolean;
 }
 
 export interface CustomerInfo {
@@ -45,6 +51,7 @@ export interface OrderPayload {
 export interface OrderResponse {
   success: boolean;
   order: {
+    _id: string;
     orderId: string;
     customer: CustomerInfo;
     items: Array<{

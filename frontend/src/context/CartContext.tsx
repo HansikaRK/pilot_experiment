@@ -48,6 +48,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
           price: product.price,
           image: product.image,
           quantity,
+          // Carry insurance metadata so CheckoutPage can display a breakdown
+          insuranceRate: product.insuranceRate ?? 0,
+          insuranceLabel: product.insuranceLabel ?? '',
+          requiresInsurance: product.requiresInsurance ?? false,
         },
       ];
     });

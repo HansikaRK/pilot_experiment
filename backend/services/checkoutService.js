@@ -11,14 +11,14 @@ const checkoutService = {
   /**
    * Cross-module checkout flow
    */
-  processCheckout: async (cartId, customer, items, couponCode, hasHighValueGoods = false, totalWeightKg = 1, taxRate = 0, userId = null) => {
-    hasHighValueGoods = Boolean(hasHighValueGoods);
+  processCheckout: async (cartId, customer, items, couponCode, totalWeightKg = 1, taxRate = 0, userId = null) => {
     totalWeightKg = Number(totalWeightKg) > 0 ? Number(totalWeightKg) : 1;
+
     // 1. Reserve inventory atomically
     const reservation = await inventoryService.reserveStock(cartId, items);
 
     try {
-      // 2. Load products to calculate subtotal & pricing
+      // 2. Load products to build cart items for pricing
       const cartItemsForPricing = [];
       for (const item of items) {
         const product = await Product.findById(item.productId);
@@ -32,20 +32,21 @@ const checkoutService = {
         });
       }
 
-      // Preliminary pricing to get subtotal after discounts (for free shipping threshold)
+      // Preliminary pricing to get subtotal after discounts (for free shipping threshold).
+      // Insurance is already included server-side in this pass.
       const preliminaryPricing = await pricingService.calculatePricing(cartItemsForPricing, couponCode, 0, 0);
-      
-      // 3. Calculate shipping
+
+      // 3. Calculate shipping (insurance surcharge is now handled in pricingService, not here)
       const shippingCostMinor = await shippingService.calculateShipping(
-        cartItemsForPricing, 
+        cartItemsForPricing,
         preliminaryPricing.subtotalMinor - preliminaryPricing.discountTotalMinor,
         customer.address.city, // using city as district
-        'Sri Lanka', 
-        hasHighValueGoods,
+        'Sri Lanka',
+        false, // hasHighValueGoods is no longer used — insurance is server-authoritative
         totalWeightKg
       );
 
-      // 4. Calculate final pricing (with shipping & tax)
+      // 4. Calculate final pricing (with shipping & tax; insurance recalculated server-side)
       const finalPricing = await pricingService.calculatePricing(
         cartItemsForPricing,
         couponCode,
@@ -61,7 +62,9 @@ const checkoutService = {
         user: userId,
         customer,
         items: finalPricing.lines.map(line => {
-          const originalItem = cartItemsForPricing.find(i => i.productId.toString() === line.id);
+          const originalItem = cartItemsForPricing.find(
+            i => i.productId.toString() === line.productId.toString()
+          );
           return {
             productId: line.productId,
             name: originalItem ? originalItem.name : 'Unknown Product',
@@ -74,6 +77,7 @@ const checkoutService = {
         discountTotalMinor: finalPricing.discountTotalMinor,
         shippingCostMinor: finalPricing.shippingCostMinor,
         taxAmountMinor: finalPricing.taxAmountMinor,
+        insuranceTotalMinor: finalPricing.insuranceTotalMinor,
         totalAmountMinor: finalPricing.totalMinor,
         currency: 'LKR',
         currencyRate: 1.0, // Snapshotted rate

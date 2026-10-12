@@ -122,10 +122,41 @@ export default function ProductPage() {
             <span className="text-sm text-gray-500 font-medium">({product.rating.toFixed(1)} rating)</span>
           </div>
           
-          <div className="text-3xl font-bold text-ceylon-maroon mb-6">
+          <div className="text-3xl font-bold text-ceylon-maroon mb-4">
             {formatCurrency(product.price)}
           </div>
-          
+
+          {/* Insurance notice */}
+          {product.insuranceRate > 0 && (
+            <div className={cn(
+              'flex items-start gap-3 px-4 py-3 rounded-lg border mb-6 text-sm',
+              product.requiresInsurance
+                ? 'bg-amber-50 border-amber-200 text-amber-900'
+                : 'bg-blue-50 border-blue-200 text-blue-900'
+            )}>
+              <span className="text-xl shrink-0" aria-hidden>🛡</span>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-semibold">
+                    {product.insuranceLabel || 'Shipping Insurance'}
+                  </span>
+                  {product.requiresInsurance ? (
+                    <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-200 text-amber-800 px-2 py-0.5 rounded-full">
+                      Mandatory
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-bold uppercase tracking-wider bg-blue-200 text-blue-800 px-2 py-0.5 rounded-full">
+                      Included
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs mt-0.5 opacity-80">
+                  {product.insuranceRate}% of your item total is added at checkout to protect your order during shipping.
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="prose prose-sm md:prose-base text-gray-600 mb-8 max-w-none leading-relaxed">
             <p>{product.description}</p>
           </div>

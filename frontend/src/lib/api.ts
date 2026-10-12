@@ -61,4 +61,15 @@ export const fetchMyOrders = async (): Promise<{ success: boolean; orders: Order
   return data;
 };
 
+export const cancelOrder = async (
+  orderId: string,
+  reason?: string
+): Promise<{ success: boolean; order: OrderResponse['order'] }> => {
+  const { data } = await api.patch<{ success: boolean; order: OrderResponse['order'] }>(
+    `/orders/${orderId}/cancel`,
+    { reason }
+  );
+  return data;
+};
+
 export default api;

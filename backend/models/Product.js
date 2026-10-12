@@ -42,6 +42,22 @@ const productSchema = new mongoose.Schema(
       max: [5, 'Rating cannot exceed 5'],
       default: 4
     },
+    insuranceRate: {
+      type: Number,
+      default: 0,
+      min: [0, 'Insurance rate must be >= 0'],
+      max: [100, 'Insurance rate cannot exceed 100%']
+    },
+    insuranceLabel: {
+      type: String,
+      default: '',
+      trim: true,
+      maxlength: [100, 'Insurance label cannot exceed 100 characters']
+    },
+    requiresInsurance: {
+      type: Boolean,
+      default: false
+    },
     isDeleted: {
       type: Boolean,
       default: false

@@ -74,6 +74,7 @@ const orderSchema = new mongoose.Schema(
     discountTotalMinor: { type: Number, default: 0 },
     shippingCostMinor: { type: Number, default: 0 },
     taxAmountMinor: { type: Number, default: 0 },
+    insuranceTotalMinor: { type: Number, default: 0 },
     totalAmountMinor: {
       type: Number,
       required: true,
