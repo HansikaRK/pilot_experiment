@@ -45,6 +45,7 @@ export interface OrderPayload {
 export interface OrderResponse {
   success: boolean;
   order: {
+    _id: string;
     orderId: string;
     customer: CustomerInfo;
     items: Array<{

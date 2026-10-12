@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Package, Calendar, RefreshCw } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { fetchMyOrders } from '../lib/api';
+import { fetchMyOrders, cancelOrder } from '../lib/api';
 import { formatCurrency } from '../lib/utils';
 import type { OrderResponse } from '../lib/types';
 
@@ -27,6 +27,21 @@ export default function MyOrdersPage() {
     
     loadOrders();
   }, [isAuthenticated]);
+
+  const handleCancel = async (orderId: string) => {
+    if (!window.confirm('Are you sure you want to cancel this order?')) return;
+    try {
+      setLoading(true);
+      await cancelOrder(orderId);
+      const res = await fetchMyOrders();
+      setOrders(res.orders);
+    } catch (err: any) {
+      console.error('Failed to cancel order', err);
+      alert(err.response?.data?.message || 'Failed to cancel order');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (authLoading) return null;
   if (!isAuthenticated) return <Navigate to="/" replace />;
@@ -76,14 +91,24 @@ export default function MyOrdersPage() {
               <div className="p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-semibold text-gray-800">Status</h3>
-                  <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
-                    order.status === 'paid' || order.status === 'delivered' ? 'bg-green-100 text-green-700' :
-                    order.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                    order.status === 'cancelled' || order.status === 'refunded' ? 'bg-red-100 text-red-700' :
-                    'bg-blue-100 text-blue-700'
-                  }`}>
-                    {order.status.replace('_', ' ')}
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
+                      order.status === 'paid' || order.status === 'delivered' ? 'bg-green-100 text-green-700' :
+                      order.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                      order.status === 'cancelled' || order.status === 'refunded' ? 'bg-red-100 text-red-700' :
+                      'bg-blue-100 text-blue-700'
+                    }`}>
+                      {order.status.replace('_', ' ')}
+                    </span>
+                    {order.status === 'pending' && (
+                      <button
+                        onClick={() => handleCancel(order._id)}
+                        className="px-3 py-1 bg-white border border-red-200 text-red-600 rounded-full text-xs font-bold uppercase tracking-wider hover:bg-red-50 hover:border-red-300 transition-colors"
+                      >
+                        Cancel Order
+                      </button>
+                    )}
+                  </div>
                 </div>
                 
                 <div className="space-y-3">
